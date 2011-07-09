@@ -1,0 +1,1 @@
+[{"pk": 1, "model": "iisharing.unitofmeasure", "fields": {"name": "EACH"}}, {"pk": 1, "model": "iisharing.organization", "fields": {"name": "Oxfam"}}, {"pk": 2, "model": "iisharing.organization", "fields": {"name": "Merlin"}}, {"pk": 3, "model": "iisharing.organization", "fields": {"name": "Concern"}}, {"pk": 4, "model": "iisharing.organization", "fields": {"name": "IRFS"}}]
