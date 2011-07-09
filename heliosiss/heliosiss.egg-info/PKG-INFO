@@ -1,0 +1,25 @@
+Metadata-Version: 1.0
+Name: heliosiss
+Version: 0.1dev
+Summary: HELIOS ISS
+Home-page: https://github.com/TomDunham/helios-iis
+Author: Tom Dunham
+Author-email: UNKNOWN
+License: Apache
+Description: Introduction
+        ============
+        
+        
+        
+        Changelog
+        =========
+        
+        0.1 - Unreleased
+        ----------------
+        
+        * Initial release
+        
+        
+Platform: UNKNOWN
+Classifier: Programming Language :: Python
+Classifier: Topic :: Software Development :: Libraries :: Python Modules
