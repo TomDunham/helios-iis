@@ -7,6 +7,8 @@ from optparse import make_option
 from django.db import connection, transaction
 from django.conf import settings
 from django.db import models
+# TODO : just use a field name list and find fkeys from model 
+# + default try fields in the order they are in the model and no MAPPINGS at all
 MAPPINGS = "column1=shared_code,column2=org_code,column3=organization(Organization|name),column4=description,column5=unit_of_measure(UnitOfMeasure|name),column6=quantity,column7=status"
 statements = re.compile(r";[ \t]*$", re.M)
 
@@ -47,7 +49,19 @@ class Command(LabelCommand):
         self.loglist = []
         self.app_label = app_label
         self.model = models.get_model(app_label, model)
-        self.csvfile = self.__csvfile(csvfile)
+        if os.path.exists(csvfile):
+            if os.path.isdir(csvfile):
+                self.csvfile = []
+                for afile in os.listdir(csvfile):
+                    if afile.endswith('.csv'):
+                        filepath = os.path.join(csvfile, afile)
+                        try:
+                            lines = self.__csvfile(filepath)
+                            self.csvfile.extend(lines)
+                        except:
+                            pass
+            else:
+                self.csvfile = self.__csvfile(csvfile)
         self.mappings = self.__mappings(mappings)
 #        raise Exception(self.model)
         self.nameindexes = bool(nameindexes)
@@ -74,7 +88,7 @@ class Command(LabelCommand):
                     # we do not need to add more, since we are dealing with
                     # foreign keys, therefore foreign data
                     matches = fk.objects.filter(**{fk_field+'__exact': 
-                    row[column]})
+                                                   row[column]})
                     
                     if not matches:
                         key = fk()
@@ -84,18 +98,18 @@ class Command(LabelCommand):
                     row[column] = fk.objects.filter(**{fk_field+'__exact': row[column]})[0]
                 if self.debug:
                     self.loglist.append('%s.%s = "%s"' % (self.model, field, row[column]))
-                try:
-                    row[column] = model_instance.getattr(field).to_python(row[column])
-                except:
-                    row[column] = None
+
                 try:
                     model_instance.__setattr__(field, row[column])
                 except:
-                    self.loglist.append('Column %s failed') % counter
+                    try:
+                        row[column] = model_instance.getattr(field).to_python(row[column])
+                    except:
+                        self.loglist.append('Column %s failed' % field)
             try:
                 model_instance.save()
             except Exception, err:
-                self.loglist.append('Exception found... %s Instance not saved.' % err)
+                self.loglist.append('Exception found... %s Instance %s not saved.' % (err, counter))
         if self.loglist:
             raise Exception(self.loglist)
 
