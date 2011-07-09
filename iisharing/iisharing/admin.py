@@ -1,5 +1,5 @@
 from django.contrib import admin
 
-from stock.models import Organization
+from iisharing.models import Organization
 
-admin.register(Organization)
+admin.site.register(Organization)

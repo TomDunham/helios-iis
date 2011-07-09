@@ -3,9 +3,21 @@ from django.db import models
 class UnitOfMeasure(models.Model):
     name = models.CharField(max_length=32)
 
+    def __unicode__(self):
+        return self.name
+
+
 class Organization(models.Model):
     name = models.CharField(max_length=255)
 
+    def __unicode__(self):
+        return self.name
+
+
+STATUS_CHOICES = (
+    ('STOCK', 'STOCK'),
+    ('ORDERED', 'ORDERED'),
+)
 
 class Item(models.Model):
     shared_code = models.CharField(
@@ -19,7 +31,7 @@ class Item(models.Model):
     unit_of_measure = models.ForeignKey(UnitOfMeasure)
     organization = models.ForeignKey(Organization)
     status = models.CharField(
-        choices = Item.STATUS_CHOICES,
-        max_len = 4)
+        choices = STATUS_CHOICES,
+        max_length = 10)
 
 
