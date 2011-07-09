@@ -1,14 +1,16 @@
-# Run sql files via django
+# Run sql files via django#
+# www.heliosfoundation.org
 import sys, os, csv, re
 
-from django.core.management.base import BaseCommand, AppCommand
+from django.core.management.base import LabelCommand, BaseCommand
 from optparse import make_option
 from django.db import connection, transaction
 from django.conf import settings
-
+from django.db import models
+MAPPINGS = "column1=shared_code,column2=org_code,column3=organization(Organization|name),column4=description,column5=unit_of_measure(UnitOfMeasure|name),column6=quantity,column7=status"
 statements = re.compile(r";[ \t]*$", re.M)
 
-class CSVImport(AppCommand):
+class Command(LabelCommand):
     """
     Parse and map a CSV resource to a Django model.
     
@@ -17,41 +19,46 @@ class CSVImport(AppCommand):
     """
     
     option_list = BaseCommand.option_list + (
-               make_option('--file', default='import.csv', model='Item',
-                           help='Please provide the file and model to import to'),
+               make_option('--mappings', default=MAPPINGS, 
+                           help='Please provide the file to import from'),
+               make_option('--model', default='iisharing.Item', 
+                           help='Please provide the model to import to'),
                    )
     help = "Imports a CSV file to a model"
 
-    def handle_app(self, app, **options):
-        filename = options.get('file', 'import.csv')
+    def handle_label(self, label, **options):
+        filename = label 
+        mappings = options.get('mappings', MAPPINGS)
         modelname = options.get('model', 'Item')
-        verbosity = options.get('verbosity', 1)        
+        if modelname.find('.') > -1:
+            app_label, modelname = modelname.split('.')
         show_traceback = options.get('traceback', True)
-
-        app_dir = os.path.normpath(os.path.join(os.path.dirname(app.__file__), 'fixtures'))
+        self.setup(filename, mappings, modelname, app_label)
+        self.run()
         return
 
-    def setup(self, csvfile, mappings, model, modelspy, nameindexes=False):
+    def setup(self, csvfile, mappings, model, 
+              app_label='iisharing', nameindexes=False):
         # This setting can be overriden at any time through an 
         # instance.debug = True, but this is for the hardcore crowd, and
         # should not polute the API
         self.debug = False
         self.errors = []
-
+        self.loglist = []
+        self.app_label = app_label
+        self.model = models.get_model(app_label, model)
         self.csvfile = self.__csvfile(csvfile)
         self.mappings = self.__mappings(mappings)
-        self.modelspy = self.__modelspy(modelspy)
-        self.model = model #self.__model(model)
 #        raise Exception(self.model)
         self.nameindexes = bool(nameindexes)
     
     def run(self):
         if self.nameindexes:
             indexes = self.csvfile.pop(0)
-            
+        counter = 0
         for row in self.csvfile:
-            model_instance = getattr(self.models, self.model)()
-            
+            counter += 1
+            model_instance = self.model()
             for (column, field, foreignkey) in self.mappings:
                 if self.nameindexes:
                     column = indexes.index(column)
@@ -62,11 +69,7 @@ class CSVImport(AppCommand):
                 
                 if foreignkey:
                     fk_key, fk_field = foreignkey
-                    try:
-                        fk = getattr(self.models, fk_key)
-                    except AttributeError:
-                        self.error('Referenced foreign keys must be in specified models.py', 0)
-                
+                    fk = models.get_model(self.app_label, fk_key)
                     # If there is corresponding data in the model already,
                     # we do not need to add more, since we are dealing with
                     # foreign keys, therefore foreign data
@@ -77,19 +80,25 @@ class CSVImport(AppCommand):
                         key = fk()
                         key.__setattr__(fk_field, row[column])
                         key.save()
-                    
-                    row[column] = fk.objects.filter(**{fk_field+'__exact': 
-                    row[column]})[0]
-            
-                print '%s.%s = "%s"' % (self.model, field, row[column])
-                model_instance.__setattr__(field, row[column])
 
+                    row[column] = fk.objects.filter(**{fk_field+'__exact': row[column]})[0]
+                if self.debug:
+                    self.loglist.append('%s.%s = "%s"' % (self.model, field, row[column]))
+                try:
+                    row[column] = model_instance.getattr(field).to_python(row[column])
+                except:
+                    row[column] = None
+                try:
+                    model_instance.__setattr__(field, row[column])
+                except:
+                    self.loglist.append('Column %s failed') % counter
             try:
                 model_instance.save()
-            except:
-                print 'Exception found... Instance not saved.'
+            except Exception, err:
+                self.loglist.append('Exception found... %s Instance not saved.' % err)
+        if self.loglist:
+            raise Exception(self.loglist)
 
-            print '-' * 20
         
     def error(self, message, type=1):
         """
@@ -113,7 +122,7 @@ class CSVImport(AppCommand):
     
     def __csvfile(self, datafile):
         try:
-            csvfile = file(datafile, 'r')
+            csvfile = file(datafile, 'rU')
         except IOError:
             self.error('Could not open specified csv file, %s, or it does not exist' % datafile, 0)
         else:
@@ -133,41 +142,16 @@ class CSVImport(AppCommand):
     def utf_8_encoder(self, unicode_csv_data):
         for line in unicode_csv_data:
             yield line.encode('utf-8')
-
-    def __modelspy(self, modelspy):
-        # We need the path containing the models.py, so if it's in the
-        # specified path, we'll just remove it.
-        if modelspy.endswith('models.py'):
-            self.error('Specified models.py path has "models.py" in it.', 1)
-            modelspy = modelspy[:-9]
-
-        if not os.path.exists(modelspy):
-            self.error('Specified directory does not contain a models.py', 0)
-
-        return modelspy
     
-    def __model(self, model):
+    def __model(self, model='Item'):
         # In order to properly import the models, and figure out what settings 
         # to use, we need to figure out the application and project names.
-        a_dir = os.path.abspath(self.modelspy)
-        a_name = os.path.basename(a_dir)
-        p_dir = os.path.dirname(a_dir)
-        p_name = os.path.basename(p_dir)
-        
-        # To import the models.py, it needs to be in sys.path
-        sys.path.append(os.path.abspath(self.modelspy))
-        # The project path should too
-        sys.path.append(os.path.dirname(p_dir))
-        
-        os.environ['DJANGO_SETTINGS_MODULE'] = '%s.settings' % p_name
-        
         try:
-            self.models = __import__('%s.%s.models' % (p_name, a_name),
-            globals(), locals(), '%s.%s' % (p_name, p_name))
+            from iisharing import models
         except ImportError:
             self.error('Specified directory does not exist')
         else:
-            return model
+            return models.Item
     
     def __mappings(self, mappings):
         """
@@ -216,7 +200,9 @@ class CSVImport(AppCommand):
                 return None
             
         mappings = mappings.replace(',', ' ')
+        mappings = mappings.replace('column', '')
         return parse_mapping(mappings)
+
 
 class FatalError(Exception):
     """
@@ -228,44 +214,3 @@ class FatalError(Exception):
     def __str__(self):
         return repr(self.value)
 
-if __name__ == '__main__':
-    import optparse
-    parser = optparse.OptionParser(usage='csvimport.py [args]', version='CSV Import %s' % __version__)
-    
-    try:
-        sys.argv[1]
-    except IndexError:
-        parser.error('No arguments specified')
-        
-    parser.add_option('-n', '--name-indexes',
-    action='store_true', dest='nameindexes',
-    help='If this flag is on, the first line of the CSV file will be used as an index reference, meaning the mapping will appear as columnname=modelname. If it is not on, columns should instead be referred to by their position (first column is 1, second is 2, etc.)')
-    
-    parser.add_option('-c', '--csv',
-    action='store', type='string', dest='csvfile',
-    help='The desired CSV file to import from')
-    
-    parser.add_option('-p', '--modelspy',
-    action='store', type='string', dest='modelspy',
-    help='The mapping, to specify which columns from the CSV file that go with which models.')
-    
-    parser.add_option('-m', '--model',
-    action='store', type='string', dest='model',
-    help='The model to perform the mapping on. Must be in the specified models.py')
-    
-    parser.add_option('-a', '--mappings',
-    action='store', type='string', dest='mappings',
-    help='The mapping, to specify which columns from the CSV file that go with which models. Written as a list of column=field, eg. column1=field1,column2=field2. No spaces. Foreign keys are specified by appending (key|field), where key is the name of the foreign key, and field is the attribute in the foreign key, that holds the data specified in the CSV column.')
-    
-    opts, args = parser.parse_args()
-    
-    if not opts.csvfile or not opts.modelspy or not opts.model or not\
-    opts.mappings:
-        parser.error('Not enough arguments specified.')
-    
-    try:
-        c = CSVImport(opts.csvfile, opts.mappings, opts.model, opts.modelspy,
-                      opts.nameindexes)
-        c.run()
-    except FatalError, e:
-        parser.error(e)
