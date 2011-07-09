@@ -1,21 +1,48 @@
 <!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
-<html> <head>
+<html>
+<head>
+<style>
+
+td {
+  border: 1pt solid gray;
+}
+</style>
+
 <title></title>
 </head>
 
 <body>
 <h1>FOO</h1>
 
+<form action="" method="get">
+    {{ filter.form.as_p }}
+    <input type="submit" />
+</form>
+
 <table>
-{% for item in object_list %}
   <tr>
+    <td>shared_code</td>
+    <td>org_code</td>
+    <td>description</td>
+    <td>quantity</td>
+    <td>unit_of_measure</td>
+    <td>organization.name</td>
+    <td>status</td>
+  </tr>
+
+{% for item in filter %}
+  <tr>
+    <td>{{ item.shared_code }}</td>
     <td>{{ item.org_code }}</td>
     <td>{{ item.description }}</td>
+    <td>{{ item.quantity }}</td>
+    <td>{{ item.unit_of_measure }}</td>
+    <td>{{ item.organization.name }}</td>
+    <td>{{ item.status }}</td>
   </tr>
 {% endfor %}
 </table>
 
 <hr>
 <address></address>
-<!-- hhmts start --> Last modified: Sat Jul  9 14:25:59 BST 2011 <!-- hhmts end -->
 </body> </html>
