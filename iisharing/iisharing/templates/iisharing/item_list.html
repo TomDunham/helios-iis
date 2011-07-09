@@ -1,0 +1,21 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<html> <head>
+<title></title>
+</head>
+
+<body>
+<h1>FOO</h1>
+
+<table>
+{% for item in object_list %}
+  <tr>
+    <td>{{ item.org_code }}</td>
+    <td>{{ item.description }}</td>
+  </tr>
+{% endfor %}
+</table>
+
+<hr>
+<address></address>
+<!-- hhmts start --> Last modified: Sat Jul  9 14:25:59 BST 2011 <!-- hhmts end -->
+</body> </html>
