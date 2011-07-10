@@ -28,6 +28,7 @@ td {
     <td>unit_of_measure</td>
     <td>organization.name</td>
     <td>status</td>
+    <td>country</td>
   </tr>
 
 {% for item in filter %}
@@ -39,6 +40,7 @@ td {
     <td>{{ item.unit_of_measure }}</td>
     <td>{{ item.organization.name }}</td>
     <td>{{ item.status }}</td>
+    <td>{{ item.country.code }}</td>
   </tr>
 {% endfor %}
 </table>

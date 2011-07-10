@@ -11,6 +11,9 @@ class Country(models.Model):
     code = models.CharField(max_length=4, primary_key=True)
     name = models.CharField(max_length=255)
 
+    def __unicode__(self):
+        return u"%s (%s)" % (self.name, self.code)
+
 
 class UnitOfMeasure(models.Model):
     name = models.CharField(max_length=32)
