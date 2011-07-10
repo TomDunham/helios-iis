@@ -1,4 +1,6 @@
-# Send signals for emails etc
+# Dont use signals because it gets recursive
+# but use this for override saves
+
 #from django.db.models.signals import pre_save
 from csvimport.models import CSVImport
 from csvimport.management.commands.csvimport import Command
