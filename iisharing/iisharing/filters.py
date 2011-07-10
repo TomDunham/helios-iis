@@ -5,4 +5,4 @@ from iisharing.models import Item
 class StockFilterSet(django_filters.FilterSet):
     class Meta:
         model = Item
-        fields = ['shared_code', 'organization']
+        fields = ['country', 'shared_code', 'organization']

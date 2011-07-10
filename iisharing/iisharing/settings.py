@@ -121,6 +121,7 @@ INSTALLED_APPS = (
     # 'django.contrib.admindocs',
     'iisharing',
     'csvimport'
+    'django.contrib.humanize',
 )
 
 # A sample logging configuration. The only tangible logging
