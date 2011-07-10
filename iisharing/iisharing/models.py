@@ -1,5 +1,17 @@
 from django.db import models
 
+class Country(models.Model):
+    """
+    UN country (location) codes.
+
+    See:
+    http://live.unece.org/cefact/codesfortrade/codes_index.html
+    http://live.unece.org/cefact/locode/welcome.html
+    """
+    code = models.CharField(max_length=4, primary_key=True)
+    name = models.CharField(max_length=255)
+
+
 class UnitOfMeasure(models.Model):
     name = models.CharField(max_length=32)
 
@@ -33,5 +45,6 @@ class Item(models.Model):
     status = models.CharField(
         choices = STATUS_CHOICES,
         max_length = 10)
+    country = models.ForeignKey(Country)
 
 
