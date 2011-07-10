@@ -117,6 +117,10 @@ th {
   padding-bottom: .2em;
 }
 
+table {
+  border-bottom: 1pt solid black;
+}
+
 .numeric {
   text-align: right;
 }
@@ -142,11 +146,11 @@ th {
 
 <body>
 <form action="" method="get" class="searchform">
-    {{ filter.form.as_p }}
+    {{ form.as_p }}
     <input type="submit" />
 </form>
 
-
+{% include "pagination.html" %}
 <table>
   <tr>
     <th>Shared Code</th>
@@ -159,7 +163,7 @@ th {
     <th>Country</th>
   </tr>
 
-{% for item in filter %}
+{% for item in object_list %}
   <tr>
     <td>{{ item.shared_code }}</td>
     <td>{{ item.org_code }}</td>
@@ -172,5 +176,6 @@ th {
   </tr>
 {% endfor %}
 </table>
+{% include "pagination.html" %}
 
 </body> </html>
