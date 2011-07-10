@@ -29,11 +29,6 @@ class Organization(models.Model):
         return self.name
 
 
-STATUS_CHOICES = (
-    ('STOCK', 'STOCK'),
-    ('ORDERED', 'ORDERED'),
-)
-
 class Item(models.Model):
     shared_code = models.CharField(
         max_length=32,
@@ -45,9 +40,7 @@ class Item(models.Model):
     quantity = models.PositiveIntegerField()
     unit_of_measure = models.ForeignKey(UnitOfMeasure)
     organization = models.ForeignKey(Organization)
-    status = models.CharField(
-        choices = STATUS_CHOICES,
-        max_length = 10)
+    status = models.CharField(max_length = 10)
     country = models.ForeignKey(Country)
 
 

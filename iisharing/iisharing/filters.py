@@ -1,6 +1,6 @@
 import django_filters
 
-from iisharing.models import Item, Country, Organization, STATUS_CHOICES
+from iisharing.models import Item, Country, Organization
 
 class StockFilterSet(django_filters.FilterSet):
     country = django_filters.ModelMultipleChoiceFilter(
@@ -9,10 +9,15 @@ class StockFilterSet(django_filters.FilterSet):
     organization = django_filters.ModelMultipleChoiceFilter(
         queryset=Organization.objects.all())
 
-    status = django_filters.MultipleChoiceFilter(
-        choices = STATUS_CHOICES)
-
-
     class Meta:
         model = Item
         fields = ['country', 'shared_code', 'organization', 'status']
+
+    def __init__(self, *args, **kwargs):
+        super(StockFilterSet, self).__init__(*args, **kwargs)
+        istatus = Item.objects.values_list('status', flat=True).distinct()
+        status = django_filters.MultipleChoiceFilter(
+            name = "status",
+            choices = [(s, s) for s in istatus]
+            )
+        self.filters['status'] = status
