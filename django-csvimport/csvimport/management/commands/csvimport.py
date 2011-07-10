@@ -9,7 +9,7 @@ from django.conf import settings
 from django.db import models
 # TODO : just use a field name list and find fkeys from model 
 # + default try fields in the order they are in the model and no MAPPINGS at all
-MAPPINGS = "column1=shared_code,column2=org_code,column3=organization(Organization|name),column4=description,column5=unit_of_measure(UnitOfMeasure|name),column6=quantity,column7=status"
+MAPPINGS = "column1=shared_code,column2=org_code,column3=organization(Organization|name),column4=description,column5=unit_of_measure(UnitOfMeasure|name),column6=quantity,column7=status,column8=country(Country|code)"
 statements = re.compile(r";[ \t]*$", re.M)
 
 class Command(LabelCommand):
@@ -87,7 +87,9 @@ class Command(LabelCommand):
                     column = indexes.index(column)
                 else:
                     column = int(column)-1
- 
+
+                if column == 7:    
+                    row.append('AF')
                 row[column] = row[column].strip()
                 
                 if foreignkey:
