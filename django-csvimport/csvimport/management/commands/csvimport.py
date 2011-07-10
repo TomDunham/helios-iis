@@ -1,12 +1,14 @@
 # Run sql files via django#
 # www.heliosfoundation.org
 import sys, os, csv, re
+from datetime import datetime
 
 from django.core.management.base import LabelCommand, BaseCommand
 from optparse import make_option
 from django.db import connection, transaction
 from django.conf import settings
 from django.db import models
+
 # TODO : just use a field name list and find fkeys from model 
 # + default try fields in the order they are in the model and no MAPPINGS at all
 MAPPINGS = "column1=shared_code,column2=org_code,column3=organization(Organization|name),column4=description,column5=unit_of_measure(UnitOfMeasure|name),column6=quantity,column7=status,column8=country(Country|code)"
@@ -29,12 +31,18 @@ class Command(LabelCommand):
     help = "Imports a CSV file to a model"
 
     def handle_label(self, label, **options):
+        """ Handle the circular reference by passing the nested
+            save_csvimport function 
+        """
         filename = label 
         mappings = options.get('mappings', MAPPINGS)
         modelname = options.get('model', 'Item')
         show_traceback = options.get('traceback', True)
         self.setup(mappings, modelname, filename)
+        self.props = {}
         errors = self.run()
+        if self.props:
+            save_csvimport(self.props)
         raise Exception(errors)
         return
 
@@ -52,10 +60,13 @@ class Command(LabelCommand):
         self.model = models.get_model(app_label, model)
         self.mappings = self.__mappings(mappings or MAPPINGS)
         self.nameindexes = bool(nameindexes)
+        self.file_name = csvfile
         if uploaded:
             self.csvfile = self.__csvfile(uploaded.path)
         else:    
             self.check_filesystem(csvfile)
+
+
 
     def check_filesystem(self, csvfile):
         """ Check for files on the file system """
@@ -75,13 +86,18 @@ class Command(LabelCommand):
         if not getattr(self, 'csvfile', []):
             raise Exception('File %s not found' % csvfile)
     
-    def run(self):
+    def run(self, logid=0):
         if self.nameindexes:
             indexes = self.csvfile.pop(0)
         counter = 0
-        for row in self.csvfile:
+        if logid:
+            csvimportid = logid
+        else:
+            csvimportid = 0
+        for row in self.csvfile[1:]:
             counter += 1
             model_instance = self.model()
+            model_instance.csvimport_id = csvimportid
             for (column, field, foreignkey) in self.mappings:
                 if self.nameindexes:
                     column = indexes.index(column)
@@ -119,6 +135,11 @@ class Command(LabelCommand):
                         self.loglist.append('Column %s failed' % field)
             try:
                 model_instance.save()
+                self.props = { 'file_name':self.file_name,
+                               'import_user':'cron',
+                               'upload_method':'cronjob',
+                               'error_log':'\n'.join(self.loglist),
+                               'import_date':datetime.now()}
             except Exception, err:
                 self.loglist.append('Exception found... %s Instance %s not saved.' % (err, counter))
         if self.loglist:

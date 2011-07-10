@@ -4,7 +4,6 @@ from django.contrib import admin
 from django.contrib.admin import ModelAdmin 
 
 from csvimport.models import CSVImport
-from csvimport.management.commands.csvimport import Command
 
 class CSVImportAdmin(ModelAdmin):
     ''' Custom model to not have much editable! '''
@@ -19,6 +18,7 @@ class CSVImportAdmin(ModelAdmin):
             since then file wont be found for reopening via right charset
         """
         form.save()
+        from csvimport.management.commands.csvimport import Command
         cmd = Command()
         if obj.upload_file:
             obj.file_name = obj.upload_file.name
@@ -26,7 +26,7 @@ class CSVImportAdmin(ModelAdmin):
             cmd.setup(mappings=obj.field_list, 
                       modelname=obj.model_name, 
                       uploaded=obj.upload_file)
-        errors = cmd.run()
+        errors = cmd.run(logid=obj.id)
         obj.error_log = '\n'.join(errors)
         obj.import_user = str(request.user)
         obj.import_date = datetime.now()

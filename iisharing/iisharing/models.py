@@ -1,4 +1,5 @@
 from django.db import models
+from csvimport.models import CSVImport
 
 class Country(models.Model):
     """
@@ -35,6 +36,7 @@ STATUS_CHOICES = (
 )
 
 class Item(models.Model):
+    csvimport = models.ForeignKey(CSVImport)
     shared_code = models.CharField(
         max_length=32,
         help_text = "Cross-organization item code")
