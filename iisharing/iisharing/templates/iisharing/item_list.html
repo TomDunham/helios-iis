@@ -121,13 +121,23 @@ th {
   text-align: right;
 }
 
+.searchform p {
+  display: inline
+}
+
+.searchform {
+  padding-top: 1em;
+  padding-bottom: 3em;
+  padding-left: 1em;
+}
+
 </style>
 
 <title></title>
 </head>
 
 <body>
-<form action="" method="get" style="padding-bottom:3em">
+<form action="" method="get" class="searchform">
     {{ filter.form.as_p }}
     <input type="submit" />
 </form>
