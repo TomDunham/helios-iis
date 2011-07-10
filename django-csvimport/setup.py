@@ -19,7 +19,7 @@ setup(name='django-csvimport',
       url='https://github.com/TomDunham/helios-iis',
       license='Apache',
       packages=find_packages(exclude=['ez_setup']),
-      namespace_packages=[],
+      namespace_packages=['csvimport'],
       include_package_data=True,
       zip_safe=False,
       install_requires=[

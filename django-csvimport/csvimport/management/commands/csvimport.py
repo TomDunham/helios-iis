@@ -32,23 +32,33 @@ class Command(LabelCommand):
         filename = label 
         mappings = options.get('mappings', MAPPINGS)
         modelname = options.get('model', 'Item')
-        if modelname.find('.') > -1:
-            app_label, modelname = modelname.split('.')
         show_traceback = options.get('traceback', True)
-        self.setup(filename, mappings, modelname, app_label)
-        self.run()
+        self.setup(mappings, modelname, filename)
+        errors = self.run()
+        raise Exception(errors)
         return
 
-    def setup(self, csvfile, mappings, model, 
-              app_label='iisharing', nameindexes=False):
+    def setup(self, mappings, modelname, csvfile='', 
+              uploaded=None, nameindexes=False):
         # This setting can be overriden at any time through an 
         # instance.debug = True, but this is for the hardcore crowd, and
         # should not polute the API
         self.debug = False
         self.errors = []
         self.loglist = []
+        if modelname.find('.') > -1:
+            app_label, model = modelname.split('.')
         self.app_label = app_label
         self.model = models.get_model(app_label, model)
+        self.mappings = self.__mappings(mappings or MAPPINGS)
+        self.nameindexes = bool(nameindexes)
+        if uploaded:
+            self.csvfile = self.__csvfile(uploaded.path)
+        else:    
+            self.check_filesystem(csvfile)
+
+    def check_filesystem(self, csvfile):
+        """ Check for files on the file system """
         if os.path.exists(csvfile):
             if os.path.isdir(csvfile):
                 self.csvfile = []
@@ -62,9 +72,8 @@ class Command(LabelCommand):
                             pass
             else:
                 self.csvfile = self.__csvfile(csvfile)
-        self.mappings = self.__mappings(mappings)
-#        raise Exception(self.model)
-        self.nameindexes = bool(nameindexes)
+        if not getattr(self, 'csvfile', []):
+            raise Exception('File %s not found' % csvfile)
     
     def run(self):
         if self.nameindexes:
@@ -78,7 +87,7 @@ class Command(LabelCommand):
                     column = indexes.index(column)
                 else:
                     column = int(column)-1
-                    
+ 
                 row[column] = row[column].strip()
                 
                 if foreignkey:
@@ -111,7 +120,7 @@ class Command(LabelCommand):
             except Exception, err:
                 self.loglist.append('Exception found... %s Instance %s not saved.' % (err, counter))
         if self.loglist:
-            raise Exception(self.loglist)
+            return self.loglist
 
         
     def error(self, message, type=1):
@@ -135,6 +144,7 @@ class Command(LabelCommand):
             print "%s: %s" % (types[type][0], message)
     
     def __csvfile(self, datafile):
+        #import chardet
         try:
             csvfile = file(datafile, 'rU')
         except IOError:

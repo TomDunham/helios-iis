@@ -1,6 +1,7 @@
 from django.contrib import admin
 from django.contrib.admin import ModelAdmin 
 
+from csvimport import signals
 from csvimport.models import CSVImport
 
 class CSVImportAdmin(ModelAdmin):
@@ -9,7 +10,6 @@ class CSVImportAdmin(ModelAdmin):
                        'encoding',
                        'upload_method',
                        'error_log',
-                       'import_date',
                        'import_user']
 
 admin.site.register(CSVImport, CSVImportAdmin)
