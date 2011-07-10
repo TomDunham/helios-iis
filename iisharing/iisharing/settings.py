@@ -120,7 +120,8 @@ INSTALLED_APPS = (
     # Uncomment the next line to enable admin documentation:
     # 'django.contrib.admindocs',
     'iisharing',
-    'djangocsvimport'
+    'djangocsvimport',
+    'django.contrib.humanize',
 )
 
 # A sample logging configuration. The only tangible logging
