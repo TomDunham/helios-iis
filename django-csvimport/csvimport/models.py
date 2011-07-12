@@ -25,3 +25,8 @@ class CSVImport(models.Model):
     def __unicode__(self):
         return self.upload_file.name
 
+class ImportModel(models.Model):
+    """ Optional one to one mapper of import file to Model """
+    csvimport = models.ForeignKey(CSVImport)
+    numeric_id = models.PositiveIntegerField()
+    natural_key = models.CharField(max_length=100)

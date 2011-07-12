@@ -31,7 +31,6 @@ class Organization(models.Model):
 
 
 class Item(models.Model):
-    csvimport = models.ForeignKey(CSVImport)
     shared_code = models.CharField(
         max_length=32,
         help_text = "Cross-organization item code")

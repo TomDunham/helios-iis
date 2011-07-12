@@ -9,10 +9,21 @@ from django.db import connection, transaction
 from django.conf import settings
 from django.db import models
 
+from csvimport import models
 # TODO : just use a field name list and find fkeys from model 
 # + default try fields in the order they are in the model and no MAPPINGS at all
 MAPPINGS = "column1=shared_code,column2=org_code,column3=organization(Organization|name),column4=description,column5=unit_of_measure(UnitOfMeasure|name),column6=quantity,column7=status,column8=country(Country|code)"
 statements = re.compile(r";[ \t]*$", re.M)
+
+def save_csvimport(props={}, instance=None):
+    """ To avoid circular imports do saves here """
+    if not instance:
+        csvimport = models.CSVImport()
+    for key in props.keys():
+        csvimport.__setattr__(key, value)
+    csvimport.save()
+    return csvimport.id
+
 
 class Command(LabelCommand):
     """
