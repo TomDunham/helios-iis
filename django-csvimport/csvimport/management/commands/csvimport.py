@@ -3,6 +3,7 @@
 import sys, os, csv, re
 from datetime import datetime
 
+from django.core.exceptions import ObjectDoesNotExist
 from django.core.management.base import LabelCommand, BaseCommand
 from optparse import make_option
 from django.db import connection, transaction
@@ -46,7 +47,7 @@ class Command(LabelCommand):
             save_csvimport function 
         """
         filename = label 
-        mappings = options.get('mappings', MAPPINGS)
+        mappings = options.get('mappings', []) #MAPPINGS)
         modelname = options.get('model', 'Item')
         show_traceback = options.get('traceback', True)
         self.setup(mappings, modelname, filename)
@@ -58,10 +59,8 @@ class Command(LabelCommand):
         return
 
     def setup(self, mappings, modelname, csvfile='', 
-              uploaded=None, nameindexes=False):
-        # This setting can be overriden at any time through an 
-        # instance.debug = True, but this is for the hardcore crowd, and
-        # should not polute the API
+              uploaded=None, nameindexes=False, deduplicate=True):
+        """ Setup up the attributes for running the import """
         self.debug = False
         self.errors = []
         self.loglist = []
@@ -69,15 +68,21 @@ class Command(LabelCommand):
             app_label, model = modelname.split('.')
         self.app_label = app_label
         self.model = models.get_model(app_label, model)
-        self.mappings = self.__mappings(mappings or MAPPINGS)
-        self.nameindexes = bool(nameindexes)
+        if mappings:
+            self.mappings = self.__mappings(mappings)
+        else:
+            self.mappings = []
+        self.nameindexes = bool(nameindexes) # or MAPPINGS
         self.file_name = csvfile
+        self.deduplicate = deduplicate
         if uploaded:
             self.csvfile = self.__csvfile(uploaded.path)
         else:    
             self.check_filesystem(csvfile)
 
-
+    def check_fkey(self, key, field):
+        #TODO add (Model|field)
+        return key
 
     def check_filesystem(self, csvfile):
         """ Check for files on the file system """
@@ -105,6 +110,17 @@ class Command(LabelCommand):
             csvimportid = logid
         else:
             csvimportid = 0
+        mapping = []
+        if not self.mappings:
+            fieldmap = {}
+            for field in self.model._meta.fields:
+                fieldmap[field.name] = field
+            for heading in self.csvfile[0]:
+                for key in heading, heading.lower():
+                    if fieldmap.has_key(key):
+                        field = fieldmap[key]
+                        key = self.check_fkey(key, field)
+                        mapping.append(key)
         for row in self.csvfile[1:]:
             counter += 1
             model_instance = self.model()
@@ -114,7 +130,7 @@ class Command(LabelCommand):
                     column = indexes.index(column)
                 else:
                     column = int(column)-1
-
+                # hack
                 if column == 7:    
                     row.append('AF')
                 row[column] = row[column].strip()
@@ -144,16 +160,27 @@ class Command(LabelCommand):
                         row[column] = model_instance.getattr(field).to_python(row[column])
                     except:
                         self.loglist.append('Column %s failed' % field)
+            if self.deduplicate:
+                matchdict = {}
+                for (column, field, foreignkey) in self.mappings:
+                    matchdict[field + '__exact'] = getattr(model_instance, 
+                                                           field, None)
+                try:
+                    exists = self.model.objects.get(**matchdict)
+                    continue
+                except ObjectDoesNotExist:
+                    pass
+
             try:
                 model_instance.save()
-                self.props = { 'file_name':self.file_name,
-                               'import_user':'cron',
-                               'upload_method':'cronjob',
-                               'error_log':'\n'.join(self.loglist),
-                               'import_date':datetime.now()}
             except Exception, err:
                 self.loglist.append('Exception found... %s Instance %s not saved.' % (err, counter))
         if self.loglist:
+            self.props = { 'file_name':self.file_name,
+                           'import_user':'cron',
+                           'upload_method':'cronjob',
+                           'error_log':'\n'.join(self.loglist),
+                           'import_date':datetime.now()}
             return self.loglist
 
         
@@ -256,7 +283,7 @@ class Command(LabelCommand):
                 return (found.group(1), found.group(2))
             else:
                 return None
-            
+                    
         mappings = mappings.replace(',', ' ')
         mappings = mappings.replace('column', '')
         return parse_mapping(mappings)
