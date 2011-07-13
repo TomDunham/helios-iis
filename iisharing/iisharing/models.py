@@ -23,7 +23,7 @@ class UnitOfMeasure(models.Model):
         return self.name
 
 
-class Organization(models.Model):
+class Organisation(models.Model):
     name = models.CharField(max_length=255)
 
     def __unicode__(self):
@@ -31,17 +31,20 @@ class Organization(models.Model):
 
 
 class Item(models.Model):
-    shared_code = models.CharField(
+    TYPE = models.PositiveIntegerField(default=0)
+    code_share = models.CharField(
         max_length=32,
         help_text = "Cross-organization item code")
-    org_code = models.CharField(
+    code_org = models.CharField(
         max_length=32,
         help_text="Organization-specfific item code")
     description = models.TextField()
     quantity = models.PositiveIntegerField()
-    unit_of_measure = models.ForeignKey(UnitOfMeasure)
-    organization = models.ForeignKey(Organization)
+    uom = models.ForeignKey(UnitOfMeasure,
+                            help_text = 'Unit of Measure')
+    organisation = models.ForeignKey(Organisation)
     status = models.CharField(max_length = 10)
+    date = models.DateField(auto_now=True)
     country = models.ForeignKey(Country)
 
 

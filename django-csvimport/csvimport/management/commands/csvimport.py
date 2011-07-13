@@ -82,6 +82,8 @@ class Command(LabelCommand):
 
     def check_fkey(self, key, field):
         #TODO add (Model|field)
+        if type(field) == type(models.ForeignKey):
+            raise Exception(dir(key))
         return key
 
     def check_filesystem(self, csvfile):
@@ -115,12 +117,14 @@ class Command(LabelCommand):
             fieldmap = {}
             for field in self.model._meta.fields:
                 fieldmap[field.name] = field
-            for heading in self.csvfile[0]:
+            for i, heading in enumerate(self.csvfile[0]):
                 for key in heading, heading.lower():
                     if fieldmap.has_key(key):
                         field = fieldmap[key]
                         key = self.check_fkey(key, field)
-                        mapping.append(key)
+                        mapping.append('column%s=%s' % (i+1, key))
+            self.mapping = ','.join(mapping)
+            raise Exception(self.mapping)
         for row in self.csvfile[1:]:
             counter += 1
             model_instance = self.model()
