@@ -81,9 +81,11 @@ class Command(LabelCommand):
             self.check_filesystem(csvfile)
 
     def check_fkey(self, key, field):
-        #TODO add (Model|field)
-        if type(field) == type(models.ForeignKey):
-            raise Exception(dir(key))
+        """ Build fkey mapping via introspection of models """
+        #TODO fix to find related field name rather than assume second field
+        if field.__class__ == models.ForeignKey:
+            key += '(%s|%s)' % (field.related.parent_model.__name__,
+                                field.related.parent_model._meta.fields[1].name,)
         return key
 
     def check_filesystem(self, csvfile):
@@ -124,7 +126,6 @@ class Command(LabelCommand):
                         key = self.check_fkey(key, field)
                         mapping.append('column%s=%s' % (i+1, key))
             self.mapping = ','.join(mapping)
-            raise Exception(self.mapping)
         for row in self.csvfile[1:]:
             counter += 1
             model_instance = self.model()
@@ -174,7 +175,6 @@ class Command(LabelCommand):
                     continue
                 except ObjectDoesNotExist:
                     pass
-
             try:
                 model_instance.save()
             except Exception, err:
