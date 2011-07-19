@@ -23,16 +23,34 @@ class CSVImportAdmin(ModelAdmin):
         if obj.upload_file:
             obj.file_name = obj.upload_file.name
             obj.encoding = ''
+            defaults = self.filename_defaults(obj.file_name)
             cmd.setup(mappings=obj.field_list, 
                       modelname=obj.model_name, 
-                      uploaded=obj.upload_file)
+                      uploaded=obj.upload_file,
+                      defaults=defaults)
         errors = cmd.run(logid=obj.id)
-        obj.error_log = '\n'.join(errors)
+        if errors:
+            obj.error_log = '\n'.join(errors)
         obj.import_user = str(request.user)
         obj.import_date = datetime.now()
         obj.save()
 
-       
-
+    def filename_defaults(self, filename):
+        """ Override this method to supply filename based data """
+        # example ORG-COUNTRY.csv
+        defaults = []
+        if filename.find('.')>-1:
+            name = filename.split('.')[0]
+            if name.find('_')>-1:
+                name = name.split('_')[0]
+            try:
+                org, country = name.split('-')
+            except:
+                return defaults
+            if org:
+                defaults.append(('code_org', org, ('Organisation', 'name')))
+            if country:
+                defaults.append(('country', country, ('Country', 'code')))
+        return defaults
 
 admin.site.register(CSVImport, CSVImportAdmin)

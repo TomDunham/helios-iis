@@ -1,6 +1,7 @@
 from django.db import models
 from csvimport.models import CSVImport
 
+
 class Country(models.Model):
     """
     UN country (location) codes.
@@ -38,13 +39,13 @@ class Item(models.Model):
     code_org = models.CharField(
         max_length=32,
         help_text="Organization-specfific item code")
-    description = models.TextField()
-    quantity = models.PositiveIntegerField()
+    description = models.TextField(null=True)
+    quantity = models.PositiveIntegerField(default=1)
     uom = models.ForeignKey(UnitOfMeasure,
                             help_text = 'Unit of Measure')
     organisation = models.ForeignKey(Organisation)
-    status = models.CharField(max_length = 10)
-    date = models.DateField(auto_now=True)
+    status = models.CharField(max_length = 10, null=True)
+    date = models.DateField(auto_now=True, null=True, validators=[])
     country = models.ForeignKey(Country)
 
 

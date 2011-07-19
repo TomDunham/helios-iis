@@ -58,12 +58,13 @@ class Command(LabelCommand):
         raise Exception(errors)
         return
 
-    def setup(self, mappings, modelname, csvfile='', 
+    def setup(self, mappings, modelname, csvfile='', defaults=[],
               uploaded=None, nameindexes=False, deduplicate=True):
         """ Setup up the attributes for running the import """
         self.debug = False
         self.errors = []
         self.loglist = []
+        self.defaults = defaults
         if modelname.find('.') > -1:
             app_label, model = modelname.split('.')
         self.app_label = app_label
@@ -125,7 +126,8 @@ class Command(LabelCommand):
                         field = fieldmap[key]
                         key = self.check_fkey(key, field)
                         mapping.append('column%s=%s' % (i+1, key))
-            self.mapping = ','.join(mapping)
+            mappingstr = ','.join(mapping)
+            self.mappings = self.__mappings(mappingstr)            
         for row in self.csvfile[1:]:
             counter += 1
             model_instance = self.model()
@@ -135,36 +137,32 @@ class Command(LabelCommand):
                     column = indexes.index(column)
                 else:
                     column = int(column)-1
-                # hack
-                if column == 7:    
-                    row.append('AF')
+
                 row[column] = row[column].strip()
                 
                 if foreignkey:
-                    fk_key, fk_field = foreignkey
-                    fk = models.get_model(self.app_label, fk_key)
-                    # If there is corresponding data in the model already,
-                    # we do not need to add more, since we are dealing with
-                    # foreign keys, therefore foreign data
-                    matches = fk.objects.filter(**{fk_field+'__exact': 
-                                                   row[column]})
-                    
-                    if not matches:
-                        key = fk()
-                        key.__setattr__(fk_field, row[column])
-                        key.save()
+                    row[column] = self.insert_fkey(foreignkey, row[column])
 
-                    row[column] = fk.objects.filter(**{fk_field+'__exact': row[column]})[0]
                 if self.debug:
                     self.loglist.append('%s.%s = "%s"' % (self.model, field, row[column]))
-
+                if field == 'date':
+                    row[column] = datetime.now()
                 try:
                     model_instance.__setattr__(field, row[column])
                 except:
                     try:
                         row[column] = model_instance.getattr(field).to_python(row[column])
                     except:
-                        self.loglist.append('Column %s failed' % field)
+                        try:
+                            row[column] = datetime(row[column])
+                        except:
+                            row[column] = None
+                            self.loglist.append('Column %s failed' % field)
+            if self.defaults:
+                for (field, value, foreignkey) in self.defaults:
+                    if foreignkey:
+                        value = self.insert_fkey(foreignkey, value)
+                    model_instance.__setattr__(field, value)
             if self.deduplicate:
                 matchdict = {}
                 for (column, field, foreignkey) in self.mappings:
@@ -187,6 +185,25 @@ class Command(LabelCommand):
                            'import_date':datetime.now()}
             return self.loglist
 
+    def insert_fkey(self, foreignkey, rowcol):
+        """ Add fkey if not present 
+            If there is corresponding data in the model already,
+            we do not need to add more, since we are dealing with
+            foreign keys, therefore foreign data
+        """
+        fk_key, fk_field = foreignkey
+        if fk_key and fk_field:
+            fk = models.get_model(self.app_label, fk_key)
+            matches = fk.objects.filter(**{fk_field+'__exact': 
+                                           rowcol})
+
+            if not matches:
+                key = fk()
+                key.__setattr__(fk_field, rowcol)
+                key.save()
+
+            rowcol = fk.objects.filter(**{fk_field+'__exact': rowcol})[0]
+        return rowcol
         
     def error(self, message, type=1):
         """
