@@ -4,14 +4,14 @@ from csvimport.models import CSVImport
 
 class Country(models.Model):
     """
-    UN country (location) codes.
-
-    See:
-    http://live.unece.org/cefact/codesfortrade/codes_index.html
-    http://live.unece.org/cefact/locode/welcome.html
+    ISO country (location) codes.
+    and lat long for Geopoint Mapping
     """
     code = models.CharField(max_length=4, primary_key=True)
     name = models.CharField(max_length=255)
+    latitude = models.FloatField()
+    longitude = models.FloatField()
+    alias = models.CharField(max_length=255)
 
     def __unicode__(self):
         return u"%s (%s)" % (self.name, self.code)

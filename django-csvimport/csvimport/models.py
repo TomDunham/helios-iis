@@ -8,10 +8,10 @@ class CSVImport(models.Model):
     model_name = models.CharField(max_length=255, blank=True, 
                                   default='iisharing.Item',
                         help_text='Please specify the app_label.model_name')
-    field_list = models.CharField(max_length=255, blank=True,
-                        help_text='''Enter list of fields in order, 
-                                     or use CSV with all fields in order, 
-                                     or a header row with field names''')
+    field_list = models.CharField(max_length=255, blank=True, 
+                        help_text='''Enter list of fields in order only if
+                                     you dont have a header row with matching field names, eg.
+                                     "column1=shared_code,column2=org(Organisation|name)"''')
     upload_file = models.FileField(upload_to='tmp')
     file_name = models.CharField(max_length=255, blank=True)
     encoding = models.CharField(max_length=32, blank=True)

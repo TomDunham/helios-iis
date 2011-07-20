@@ -2,6 +2,7 @@
 # www.heliosfoundation.org
 import sys, os, csv, re
 from datetime import datetime
+import codecs
 
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.management.base import LabelCommand, BaseCommand
@@ -11,9 +12,8 @@ from django.conf import settings
 from django.db import models
 
 from csvimport import models
-# TODO : just use a field name list and find fkeys from model 
-# + default try fields in the order they are in the model and no MAPPINGS at all
-MAPPINGS = "column1=shared_code,column2=org_code,column3=organization(Organization|name),column4=description,column5=unit_of_measure(UnitOfMeasure|name),column6=quantity,column7=status,column8=country(Country|code)"
+# Note if mappings are manually specified they are of the following form ...
+# MAPPINGS = "column1=shared_code,column2=org(Organisation|name),column3=description"
 statements = re.compile(r";[ \t]*$", re.M)
 
 def save_csvimport(props={}, instance=None):
@@ -35,7 +35,7 @@ class Command(LabelCommand):
     """
     
     option_list = BaseCommand.option_list + (
-               make_option('--mappings', default=MAPPINGS, 
+               make_option('--mappings', default='', 
                            help='Please provide the file to import from'),
                make_option('--model', default='iisharing.Item', 
                            help='Please provide the model to import to'),
@@ -73,7 +73,7 @@ class Command(LabelCommand):
             self.mappings = self.__mappings(mappings)
         else:
             self.mappings = []
-        self.nameindexes = bool(nameindexes) # or MAPPINGS
+        self.nameindexes = bool(nameindexes) 
         self.file_name = csvfile
         self.deduplicate = deduplicate
         if uploaded:
@@ -145,8 +145,6 @@ class Command(LabelCommand):
 
                 if self.debug:
                     self.loglist.append('%s.%s = "%s"' % (self.model, field, row[column]))
-                if field == 'date':
-                    row[column] = datetime.now()
                 try:
                     model_instance.__setattr__(field, row[column])
                 except:
@@ -228,7 +226,7 @@ class Command(LabelCommand):
     def __csvfile(self, datafile):
         #import chardet
         try:
-            csvfile = file(datafile, 'rU')
+            csvfile = codecs.open(datafile, 'r', 'utf-8')
         except IOError:
             self.error('Could not open specified csv file, %s, or it does not exist' % datafile, 0)
         else:

@@ -45,6 +45,8 @@ class CSVImportAdmin(ModelAdmin):
                 name = name.split('_')[0]
             try:
                 org, country = name.split('-')
+                country = country[0:2].upper()
+                org = org.upper()
             except:
                 return defaults
             if org:
