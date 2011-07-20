@@ -8,10 +8,10 @@ class Country(models.Model):
     and lat long for Geopoint Mapping
     """
     code = models.CharField(max_length=4, primary_key=True)
-    name = models.CharField(max_length=255)
-    latitude = models.FloatField()
-    longitude = models.FloatField()
-    alias = models.CharField(max_length=255)
+    name = models.CharField(max_length=255, default='')
+    latitude = models.FloatField(default=0)
+    longitude = models.FloatField(default=0)
+    alias = models.CharField(max_length=255, default='')
 
     def __unicode__(self):
         return u"%s (%s)" % (self.name, self.code)
