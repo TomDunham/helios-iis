@@ -158,9 +158,14 @@ class Command(LabelCommand):
                             self.loglist.append('Column %s failed' % field)
             if self.defaults:
                 for (field, value, foreignkey) in self.defaults:
-                    if foreignkey:
-                        value = self.insert_fkey(foreignkey, value)
-                    model_instance.__setattr__(field, value)
+                    try:
+                        done = model_instance.getattr(field)
+                    except:
+                        done = False
+                    if not done:
+                        if foreignkey:
+                            value = self.insert_fkey(foreignkey, value)
+                        model_instance.__setattr__(field, value)
             if self.deduplicate:
                 matchdict = {}
                 for (column, field, foreignkey) in self.mappings:

@@ -39,20 +39,20 @@ class CSVImportAdmin(ModelAdmin):
         """ Override this method to supply filename based data """
         # example ORG-COUNTRY.csv
         defaults = []
-        if filename.find('.')>-1:
-            name = filename.split('.')[0]
-            if name.find('_')>-1:
-                name = name.split('_')[0]
-            try:
-                org, country = name.split('-')
-                country = country[0:2].upper()
-                org = org.upper()
-            except:
-                return defaults
-            if org:
-                defaults.append(('code_org', org, ('Organisation', 'name')))
-            if country:
-                defaults.append(('country', country, ('Country', 'code')))
+        splitters = {'/':-1,'.':0,'_':0}
+        for splitter, index in splitters.items():
+            if filename.find(splitter)>-1:
+                filename = filename.split(splitter)[index]
+        try:
+            org, country = filename.split('-')
+            country = country[0:2].upper()
+            org = org.upper()
+        except:
+            return defaults
+        if org:
+            defaults.append(('organisation', org, ('Organisation', 'name')))
+        if country:
+            defaults.append(('country', country, ('Country', 'code')))
         return defaults
 
 admin.site.register(CSVImport, CSVImportAdmin)
