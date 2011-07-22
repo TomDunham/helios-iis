@@ -6,7 +6,7 @@ class StockFilterSet(django_filters.FilterSet):
     country = django_filters.ModelMultipleChoiceFilter(
         queryset=Country.objects.all())
 
-    organization = django_filters.ModelMultipleChoiceFilter(
+    organisation = django_filters.ModelMultipleChoiceFilter(
         queryset=Organisation.objects.all())
 
     class Meta:
