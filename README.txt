@@ -23,6 +23,6 @@ Demo URL = http://www.helios-foundation.org/iisharing
 Background
 ----------
 
-This code was written for a (postponed) django-dash over the weekend of the 8 and 9th July 2011
+This code was written for a (postponed) django-dash over the weekend of the 9th and 10th July 2011
 by Tom and Ed. The House of Omni provided the workspace and the project was prompted by 
 Fraser Stephens of the HELIOS foundation.
